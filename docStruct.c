@@ -35,55 +35,77 @@ struct document get_document(char *text) {
   doc.data = NULL;
   doc.paragraph_count = 0;
 
+  if (text == NULL || *text == '\0') {
+    return doc;
+  }
+
   char *text_copy = str_duplicate(text);
   char *para_tok = strtok(text_copy, "\n");
 
-  while (para_tok) {
+  while (para_tok != NULL) {
     doc.data =
         realloc(doc.data, (doc.paragraph_count + 1) * sizeof(struct paragraph));
-    struct paragraph *p = &doc.data[doc.paragraph_count];
-    p->data = NULL;
-    p->sentence_count = 0;
+    doc.data[doc.paragraph_count].data = NULL;
+    doc.data[doc.paragraph_count].sentence_count = 0;
 
-    char *para_copy =
-        str_duplicate(para_tok); // duplicate before sentence splitting
+    // Make a copy for sentence tokenization BEFORE continuing with paragraph
+    // tokenization
+    char *para_copy = str_duplicate(para_tok);
+
+    // Get next paragraph token before we tokenizing sentences
+    para_tok = strtok(NULL, "\n");
+
+    // tokenize sentences
     char *sent_tok = strtok(para_copy, ".");
 
-    while (sent_tok) {
-      // Skip empty sentences
-      while (*sent_tok == '\0') {
-        sent_tok = strtok(NULL, ".");
-        if (!sent_tok)
-          break;
+    while (sent_tok != NULL) {
+      // Skip leading spaces
+      while (*sent_tok == ' ') {
+        sent_tok++;
       }
-      if (!sent_tok)
-        break;
 
-      // Allocate new sentence
-      p->data =
-          realloc(p->data, (p->sentence_count + 1) * sizeof(struct sentence));
-      struct sentence *s = &p->data[p->sentence_count];
-      s->data = NULL;
-      s->word_count = 0;
+      // Skip empty sentences
+      if (*sent_tok == '\0') {
+        sent_tok = strtok(NULL, ".");
+        continue;
+      }
 
-      // Duplicate sentence before splitting words
-      char *sent_copy2 = str_duplicate(sent_tok);
-      char *word_tok = strtok(sent_copy2, " ");
-      while (word_tok) {
-        s->data = realloc(s->data, (s->word_count + 1) * sizeof(struct word));
-        s->data[s->word_count].data = str_duplicate(word_tok);
-        s->word_count++;
+      int sent_idx = doc.data[doc.paragraph_count].sentence_count;
+      doc.data[doc.paragraph_count].data =
+          realloc(doc.data[doc.paragraph_count].data,
+                  (sent_idx + 1) * sizeof(struct sentence));
+
+      doc.data[doc.paragraph_count].data[sent_idx].data = NULL;
+      doc.data[doc.paragraph_count].data[sent_idx].word_count = 0;
+
+      // Make a copy for word tokenization
+      char *sent_copy = str_duplicate(sent_tok);
+
+      // Get next sentence token before tokenizing words
+      sent_tok = strtok(NULL, ".");
+
+      // Now tokenize words
+      char *word_tok = strtok(sent_copy, " ");
+
+      while (word_tok != NULL) {
+        int word_idx = doc.data[doc.paragraph_count].data[sent_idx].word_count;
+        doc.data[doc.paragraph_count].data[sent_idx].data =
+            realloc(doc.data[doc.paragraph_count].data[sent_idx].data,
+                    (word_idx + 1) * sizeof(struct word));
+
+        doc.data[doc.paragraph_count].data[sent_idx].data[word_idx].data =
+            str_duplicate(word_tok);
+        doc.data[doc.paragraph_count].data[sent_idx].word_count++;
+
         word_tok = strtok(NULL, " ");
       }
-      free(sent_copy2);
 
-      p->sentence_count++;
-      sent_tok = strtok(NULL, ".");
+      free(sent_copy);
+      doc.data[doc.paragraph_count].sentence_count++;
     }
 
     free(para_copy);
     doc.paragraph_count++;
-    para_tok = strtok(NULL, "\n");
   }
 
   free(text_copy);
