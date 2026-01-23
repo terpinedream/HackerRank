@@ -3,10 +3,6 @@
 #include <string.h>
 #define MAX_STRING_LENGTH 6
 
-//
-// TODO: fix valid data outputting as NULL (see line 108)
-//
-
 struct package {
   char *id;
   int weight;
@@ -65,7 +61,7 @@ void send_all_acceptable_packages(town *source, int source_office_index,
               sizeof(package) * (tgt_office->packages_count + accepted_count));
 
   for (int i = 0; i < accepted_count; i++) {
-    tgt_office->packages[tgt_office->packages_count + 1] = accepted[i];
+    tgt_office->packages[tgt_office->packages_count + i] = accepted[i];
   }
   tgt_office->packages_count += accepted_count;
 
